@@ -86,7 +86,7 @@ ONLY output the JSON, nothing else.`,
                 accountId: req.account_id,
             },
             models: [
-                "gemini-2.0-flash",
+                "gemini-2.5-flash",
                 "deepseek-chat",
                 "gpt-4o-mini",
                 "claude-3-5-haiku",

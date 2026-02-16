@@ -2110,7 +2110,7 @@ async function extractLLMHelper({
     const response = await callOpenAICompatibleLLMWithRetry({
         messages,
         models: [
-            "gemini-2.0-flash",
+            "gemini-2.5-flash",
             "deepseek-chat",
             "gpt-4o-mini",
             "claude-3-5-haiku",
@@ -2207,7 +2207,7 @@ async function extractLLMHelper({
     const refineResponse = await callOpenAICompatibleLLMWithRetry({
         messages: refineMessages,
         models: [
-            "gemini-2.0-flash",
+            "gemini-2.5-flash",
             "deepseek-chat",
             "gpt-4o-mini",
             "claude-3-5-haiku",
@@ -2302,7 +2302,7 @@ async function extractLLMHelper({
     const metadataResponse = await callOpenAICompatibleLLMWithRetry({
         messages: metadataMessages,
         models: [
-            "gemini-2.0-flash",
+            "gemini-2.5-flash",
             "deepseek-chat",
             "gpt-4o-mini",
             "claude-3-5-haiku",
@@ -2407,7 +2407,7 @@ async function actLLMHelper({
     const response = await callOpenAICompatibleLLMWithRetry({
         messages,
         models: [
-            "gemini-2.0-flash",
+            "gemini-2.5-flash",
             "deepseek-chat",
             "deepseek-reasoner",
             "claude-3-5-sonnet",
@@ -2451,7 +2451,7 @@ async function verifyActionHelper({
     const response = await callOpenAICompatibleLLMWithRetry({
         messages,
         models: [
-            "gemini-2.0-flash",
+            "gemini-2.5-flash",
             "deepseek-chat",
             "deepseek-reasoner",
             "claude-3-5-sonnet",
@@ -3453,7 +3453,7 @@ stateAnalysis usage:
                 },
             ],
             models: [
-                "gemini-2.0-flash",
+                "gemini-2.5-flash",
                 "deepseek-chat",
                 "claude-3-5-sonnet",
                 "gpt-4o",
@@ -3597,7 +3597,7 @@ previousGoalAnalysis usage:
                 },
             ],
             models: [
-                "gemini-2.0-flash",
+                "gemini-2.5-flash",
                 "deepseek-chat",
                 "claude-3-5-sonnet",
                 "gpt-4o",
@@ -4172,7 +4172,7 @@ async function actHelperWithVision({
             messages,
             runId,
             models: [
-                "gemini-2.0-flash",
+                "gemini-2.5-flash",
                 "deepseek-chat",
                 "claude-3-5-sonnet",
                 "gpt-4o",
@@ -5730,7 +5730,7 @@ ONLY OUTPUT THE JSON. NO OTHER TEXT.`,
         const response = await callOpenAICompatibleLLMWithRetry({
             messages,
             models: [
-                "gemini-2.0-flash",
+                "gemini-2.5-flash",
                 "deepseek-chat",
                 "gpt-4o-mini",
                 "claude-3-5-haiku",

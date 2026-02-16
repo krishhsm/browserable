@@ -117,7 +117,7 @@ flowQueue.process("task-creator-job", async (job, done) => {
                     usecase: "datatable_schema",
                 },
                 models: [
-                    "gemini-2.0-flash",
+                    "gemini-2.5-flash",
                     "deepseek-chat",
                     "gpt-4o-mini",
                     "claude-3-5-haiku",
@@ -790,7 +790,7 @@ THE OBJECT MUST NOT HAVE ANY NESTED VALUES. ALL VALUES MUST BE STRING (CAN BE MA
     const response = await callOpenAICompatibleLLMWithRetry({
         messages,
         models: [
-            "gemini-2.0-flash",
+            "gemini-2.5-flash",
             "deepseek-chat",
             "gpt-4o-mini",
             "claude-3-5-haiku",
@@ -1050,7 +1050,7 @@ async function detailedOutputHelper({
         const response = await callOpenAICompatibleLLMWithRetry({
             messages: promptMessages,
             models: [
-                "gemini-2.0-flash",
+                "gemini-2.5-flash",
                 "deepseek-chat",
                 "gpt-4o-mini",
                 "claude-3-5-haiku",
@@ -1149,7 +1149,7 @@ async function createUpdatesToDocuments({
     const response = await callOpenAICompatibleLLMWithRetry({
         messages: [{ role: "user", content: prompt }],
         models: [
-            "gemini-2.0-flash",
+            "gemini-2.5-flash",
             "deepseek-chat",
             "gpt-4o-mini",
             "claude-3-5-haiku",

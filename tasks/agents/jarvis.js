@@ -2090,7 +2090,7 @@ async function decideAction({
             ...(lastImageMessage ? [lastImageMessage] : []),
         ],
         models: models || [
-            "gemini-2.0-flash",
+            "gemini-2.5-flash",
             "deepseek-chat",
             "deepseek-reasoner",
             "gpt-4o",
@@ -2340,7 +2340,7 @@ async function decideTaskDataTableOps({
             },
         ],
         models: [
-            "gemini-2.0-flash",
+            "gemini-2.5-flash",
             "deepseek-chat",
             "gpt-4o-mini",
             "claude-3-5-haiku",
@@ -2887,7 +2887,7 @@ async function decideAgent({ runId, preferredNodeId }) {
                         ...(lastImageMessage ? [lastImageMessage] : []),
                     ],
                     models: [
-                        "gemini-2.0-flash",
+                        "gemini-2.5-flash",
                         "deepseek-chat",
                         "deepseek-reasoner",
                         "gpt-4o",

@@ -90,9 +90,7 @@ async function callOpenAICompatibleLLMWithRetry({
             }
 
             if (llmKeys["gemini"]) {
-                accountSpecificModelKeys["gemini-2.0-flash"] =
-                    llmKeys["gemini"];
-                accountSpecificModelKeys["gemini-2.0-flash-lite"] =
+                accountSpecificModelKeys["gemini-2.5-flash"] =
                     llmKeys["gemini"];
             }
 
@@ -121,9 +119,7 @@ async function callOpenAICompatibleLLMWithRetry({
     }
 
     if (!!process.env.GEMINI_API_KEY) {
-        serverSpecificModelKeys["gemini-2.0-flash"] =
-            process.env.GEMINI_API_KEY;
-        serverSpecificModelKeys["gemini-2.0-flash-lite"] =
+        serverSpecificModelKeys["gemini-2.5-flash"] =
             process.env.GEMINI_API_KEY;
     }
 
@@ -211,19 +207,11 @@ async function callOpenAICompatibleLLM({
             supportedJsonSchema: true,
             supportedJsonOutput: true,
         },
-        "gemini-2.0-flash": {
+        "gemini-2.5-flash": {
             endpoint:
                 "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
-            apiKey: modelKeys["gemini-2.0-flash"],
-            actualModel: "gemini-2.0-flash",
-            supportedImageAs: "base64",
-            supportedJsonSchema: true,
-        },
-        "gemini-2.0-flash-lite": {
-            endpoint:
-                "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
-            apiKey: modelKeys["gemini-2.0-flash-lite"],
-            actualModel: "gemini-2.0-flash-lite",
+            apiKey: modelKeys["gemini-2.5-flash"],
+            actualModel: "gemini-2.5-flash",
             supportedImageAs: "base64",
             supportedJsonSchema: true,
             supportedJsonOutput: true,

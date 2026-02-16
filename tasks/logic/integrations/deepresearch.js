@@ -33,7 +33,7 @@ async function generateSerps({
     const response = await callOpenAICompatibleLLMWithRetry({
         messages,
         models: [
-            "gemini-2.0-flash",
+            "gemini-2.5-flash",
             "deepseek-chat",
             "gpt-4o-mini",
             "claude-3-5-haiku",
@@ -100,7 +100,7 @@ ${gSearchResults?.data?.html || ""}
                         searchQuery: query,
                     }),
                     models: [
-                        "gemini-2.0-flash",
+                        "gemini-2.5-flash",
                         "deepseek-chat",
                         "gpt-4o-mini",
                         "claude-3-5-haiku",
@@ -170,7 +170,7 @@ ${gSearchResults?.data?.html || ""}
                 scrapedContent,
             }),
             models: [
-                "gemini-2.0-flash",
+                "gemini-2.5-flash",
                 "deepseek-chat",
                 "gpt-4o-mini",
                 "claude-3-5-haiku",

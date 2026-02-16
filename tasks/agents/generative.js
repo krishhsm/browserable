@@ -70,7 +70,7 @@ class GenerativeAgent extends BaseAgent {
                     required: ["question"],
                     types: {
                         question: "string",
-                        model: "string (one of [gpt-4o, gpt-4o-mini, qwen-plus, claude-3-5-sonnet, claude-3-5-haiku, gemini-2.0-flash, deepseek-chat, deepseek-reasoner])",
+                        model: "string (one of [gpt-4o, gpt-4o-mini, qwen-plus, claude-3-5-sonnet, claude-3-5-haiku, gemini-2.5-flash, deepseek-chat, deepseek-reasoner])",
                     },
                 },
                 output: {
@@ -120,7 +120,7 @@ The answer MUST BE in string format. IF required, you can use markdown to format
             ],
             models: [
                 model,
-                "gemini-2.0-flash",
+                "gemini-2.5-flash",
                 "gpt-4o-mini",
                 "claude-3-5-haiku",
                 "deepseek-chat",

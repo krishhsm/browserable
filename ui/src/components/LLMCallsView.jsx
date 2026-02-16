@@ -104,8 +104,7 @@ function LLMCallsView({ flowId }) {
       "gpt-4o-mini": { input: 0.15 / 1000000, output: 0.6 / 1000000 },
       "claude-3-5-sonnet": { input: 3 / 1000000, output: 15 / 1000000 },
       "claude-3-5-haiku": { input: 0.8 / 1000000, output: 4 / 1000000 },
-      "gemini-2.0-flash": { input: 0.1 / 1000000, output: 0.4 / 1000000 },
-      "gemini-2.0-flash-lite": { input: 0.07 / 1000000, output: 0.3 / 1000000 },
+      "gemini-2.5-flash": { input: 0.3 / 1000000, output: 2.5 / 1000000 },
       "deepseek-chat": { input: 0.27 / 1000000, output: 1.1 / 1000000 },
       "deepseek-reasoner": { input: 0.55 / 1000000, output: 2.19 / 1000000 },
     };
