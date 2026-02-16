@@ -82,6 +82,8 @@ services:
       LOCAL_BROWSER_SERVICE_URL: http://host.docker.internal:9221
       BROWSER_WIDTH: 1920 # 1280
       BROWSER_HEIGHT: 1920 # 720
+      LOG_TO_FILE: "1"
+      LOG_FILE_PATH: /tasks/logs/node-logs.jsonl
     links:
       - browserable-redis
       - browserable-mongodb

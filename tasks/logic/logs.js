@@ -10,10 +10,21 @@ const db = require('../services/db');
 function extractImageUrlsFromMessages(messages) {
     const imageUrls = [];
     for (const message of messages) {
-        if (Array.isArray(message.content)) {
-            for (const content of message.content) {
-                if (content.type === 'image_url' || content.type === 'image') {
-                    imageUrls.push(content.url || content.image_url?.url);
+        if (!Array.isArray(message.content)) continue;
+        for (const content of message.content) {
+            if (content.type === 'image_url' || content.type === 'image') {
+                imageUrls.push(content.url || content.image_url?.url);
+            }
+            if (Array.isArray(content.associatedData)) {
+                for (const assoc of content.associatedData) {
+                    if (
+                        assoc.type === 'image_url' ||
+                        assoc.type === 'image'
+                    ) {
+                        imageUrls.push(
+                            assoc.url || assoc.image_url?.url
+                        );
+                    }
                 }
             }
         }
@@ -87,18 +98,27 @@ async function createGifFromMessageLogs({ flowId, runId, accountId }) {
             targetRunId = runs[0].id;
         }
 
-        // Get all agent messages for the run
+        // Get all messages for the run (agent + user + debug)
         const { rows: messageLogs } = await tasksDB.query(
             `SELECT messages FROM browserable.message_logs 
-             WHERE flow_id = $1 AND run_id = $2 AND segment = 'agent' 
+             WHERE flow_id = $1 AND run_id = $2 AND segment IN ('agent', 'user', 'debug') 
              ORDER BY created_at ASC`,
             [flowId, targetRunId]
         );
         
         // Extract image URLs from messages
-        const allImageUrls = messageLogs.flatMap(log => 
-            extractImageUrlsFromMessages(log.messages)
-        );
+        const allImageUrls = messageLogs.flatMap((log) => {
+            const raw = log.messages;
+            let parsed = raw;
+            if (typeof raw === 'string') {
+                try {
+                    parsed = JSON.parse(raw);
+                } catch (e) {
+                    parsed = [];
+                }
+            }
+            return extractImageUrlsFromMessages(parsed || []);
+        });
 
         if (allImageUrls.length === 0) {
             throw new Error('No images found in the messages');

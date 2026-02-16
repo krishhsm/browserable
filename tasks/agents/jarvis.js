@@ -49,6 +49,8 @@ const agentMap = {
 const crypto = require("crypto");
 const { sendDiscordAdminAlert } = require("../logic/utils");
 const { doneWithSession } = require("../logic/integrations/browser");
+const fs = require("fs");
+const path = require("path");
 
 function generateUUID() {
     return crypto.randomUUID();
@@ -59,6 +61,37 @@ const LLM_CALL_LIMIT_PER_NODE = 50;
 const LLM_CALL_LIMIT_PER_RUN = 1000;
 const LLM_CALL_LIMIT_PER_FLOW_PER_DAY = 1000;
 const LLM_CALL_LIMIT_PER_USER_PER_DAY = 1000;
+const LOG_TO_FILE =
+    String(process.env.LOG_TO_FILE || "").toLowerCase() === "1" ||
+    String(process.env.LOG_TO_FILE || "").toLowerCase() === "true";
+const LOG_FILE_PATH =
+    process.env.LOG_FILE_PATH ||
+    path.join(process.cwd(), "logs", "node-logs.jsonl");
+
+async function appendLogToFile({
+    segment,
+    runId,
+    nodeId,
+    threadId,
+    messages,
+}) {
+    if (!LOG_TO_FILE) return;
+    try {
+        const dir = path.dirname(LOG_FILE_PATH);
+        fs.mkdirSync(dir, { recursive: true });
+        const line = JSON.stringify({
+            ts: new Date().toISOString(),
+            segment,
+            runId,
+            nodeId,
+            threadId,
+            messages,
+        });
+        await fs.promises.appendFile(LOG_FILE_PATH, line + "\n");
+    } catch (e) {
+        console.error("Failed to append log to file:", e);
+    }
+}
 
 async function countLLMCallsForThread({ threadId }) {
     const tasksDB = await db.getTasksDB();
@@ -1531,6 +1564,13 @@ async function updateRunAgentLog({ runId, messages, threadId }) {
         `INSERT INTO browserable.message_logs (run_id, flow_id, messages, segment, created_at, thread_id) VALUES ($1, $2, $3, $4, $5, $6)`,
         [runId, flowId, JSON.stringify(messages), "agent", new Date(), threadId]
     );
+    await appendLogToFile({
+        segment: "run_agent",
+        runId,
+        nodeId: null,
+        threadId,
+        messages,
+    });
 }
 
 async function updateRunDebugLog({ runId, threadId, messages }) {
@@ -1547,6 +1587,13 @@ async function updateRunDebugLog({ runId, threadId, messages }) {
         `INSERT INTO browserable.message_logs (run_id, flow_id, messages, segment, created_at, thread_id) VALUES ($1, $2, $3, $4, $5, $6)`,
         [runId, flowId, JSON.stringify(messages), "debug", new Date(), threadId]
     );
+    await appendLogToFile({
+        segment: "run_debug",
+        runId,
+        nodeId: null,
+        threadId,
+        messages,
+    });
 }
 
 async function updateNodeDebugLog({ runId, threadId, nodeId, messages }) {
@@ -1571,6 +1618,13 @@ async function updateNodeDebugLog({ runId, threadId, nodeId, messages }) {
             threadId,
         ]
     );
+    await appendLogToFile({
+        segment: "node_debug",
+        runId,
+        nodeId,
+        threadId,
+        messages,
+    });
 }
 
 async function updateNodeAgentLog({ runId, threadId, nodeId, messages }) {
@@ -1587,6 +1641,13 @@ async function updateNodeAgentLog({ runId, threadId, nodeId, messages }) {
         `INSERT INTO browserable.message_logs (node_id, run_id, flow_id, messages, segment, created_at) VALUES ($1, $2, $3, $4, $5, $6)`,
         [nodeId, runId, flowId, JSON.stringify(messages), "agent", new Date()]
     );
+    await appendLogToFile({
+        segment: "node_agent",
+        runId,
+        nodeId,
+        threadId,
+        messages,
+    });
 }
 
 async function updateNodeUserLog({ runId, threadId, nodeId, messages }) {
@@ -1611,6 +1672,13 @@ async function updateNodeUserLog({ runId, threadId, nodeId, messages }) {
             threadId,
         ]
     );
+    await appendLogToFile({
+        segment: "node_user",
+        runId,
+        nodeId,
+        threadId,
+        messages,
+    });
 }
 
 async function updateFlowUserLog({ flowId, messages }) {

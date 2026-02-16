@@ -26,6 +26,7 @@ const textSchema = z.object({
 });
 
 const HEURISTIC_CHAR_WIDTH = 5;
+const domScreenshotState = new WeakMap();
 
 async function ensureWebviewJSInjected(page) {
     // Inject into main frame
@@ -43,6 +44,159 @@ async function ensureWebviewJSInjected(page) {
         })()`;
 
         await page.evaluate(evaluateScript);
+    }
+}
+
+async function ensureDomChangeScreenshotHooks({
+    page,
+    runId,
+    nodeId,
+    threadId,
+    jarvis,
+}) {
+    if (!page || page.isClosed()) return;
+
+    let state = domScreenshotState.get(page);
+    if (!state) {
+        state = {
+            installed: false,
+            inFlight: false,
+            pending: false,
+            lastAt: 0,
+            lastUrl: null,
+            pendingReason: null,
+            config: null,
+            schedule: null,
+        };
+        domScreenshotState.set(page, state);
+    }
+
+    state.config = { page, runId, nodeId, threadId, jarvis };
+
+    if (state.installed) return;
+    state.installed = true;
+
+    const scheduleScreenshot = async (reason = "nav", force = false) => {
+        if (!state.config || state.config.page.isClosed()) return;
+
+        if (state.inFlight) {
+            state.pending = true;
+            state.pendingReason = reason;
+            return;
+        }
+
+        const currentUrl = state.config.page.url();
+        if (reason === "nav" && !force && state.lastUrl === currentUrl) {
+            return;
+        }
+
+        state.inFlight = true;
+        try {
+            const { success, imageUrl, privateImageUrl } =
+                await screenshotHelper({
+                page: state.config.page,
+                runId: state.config.runId,
+                nodeId: state.config.nodeId,
+                threadId: state.config.threadId,
+                jarvis: state.config.jarvis,
+                });
+            if (success) {
+                state.lastUrl = currentUrl;
+                await state.config.jarvis.updateNodeUserLog({
+                    runId: state.config.runId,
+                    nodeId: state.config.nodeId,
+                    threadId: state.config.threadId,
+                    messages: [
+                        {
+                            role: "assistant",
+                            content: [
+                                {
+                                    type: "text",
+                                    text: `Screenshot captured (${reason}).`,
+                                    associatedData: [
+                                        {
+                                            type: "image",
+                                            url: imageUrl,
+                                            name: "Screenshot",
+                                        },
+                                    ],
+                                },
+                            ],
+                        },
+                    ],
+                });
+                await state.config.jarvis.updateNodeDebugLog({
+                    runId: state.config.runId,
+                    nodeId: state.config.nodeId,
+                    threadId: state.config.threadId,
+                    messages: [
+                        {
+                            role: "assistant",
+                            content: [
+                                {
+                                    type: "text",
+                                    text: `Screenshot captured (${reason}).`,
+                                    associatedData: [
+                                        {
+                                            type: "image",
+                                            url: imageUrl,
+                                            name: "Screenshot",
+                                        },
+                                        {
+                                            type: "markdown",
+                                            markdown: privateImageUrl || "",
+                                            name: "Private Screenshot URL",
+                                        },
+                                    ],
+                                },
+                            ],
+                        },
+                    ],
+                });
+            }
+        } catch (e) {
+            console.error("DOM-change screenshot failed:", e);
+        } finally {
+            state.inFlight = false;
+            if (state.pending) {
+                state.pending = false;
+                const nextReason = state.pendingReason || "nav";
+                state.pendingReason = null;
+                scheduleScreenshot(nextReason, true);
+            }
+        }
+    };
+
+    state.schedule = scheduleScreenshot;
+
+    page.on("domcontentloaded", () => {
+        scheduleScreenshot("nav");
+    });
+    page.on("load", () => scheduleScreenshot("nav"));
+    page.on("framenavigated", (frame) => {
+        if (frame === page.mainFrame()) {
+            scheduleScreenshot("nav");
+        }
+    });
+}
+
+async function requestActionScreenshot({
+    page,
+    runId,
+    nodeId,
+    threadId,
+    jarvis,
+}) {
+    await ensureDomChangeScreenshotHooks({
+        page,
+        runId,
+        nodeId,
+        threadId,
+        jarvis,
+    });
+    const state = domScreenshotState.get(page);
+    if (state?.schedule) {
+        state.schedule("action", true);
     }
 }
 
@@ -2759,6 +2913,20 @@ async function domExtractHelper({
         }
 
         const page = await context.pages()[tab.index];
+        await ensureDomChangeScreenshotHooks({
+            page,
+            runId,
+            nodeId,
+            threadId,
+            jarvis,
+        });
+        await ensureDomChangeScreenshotHooks({
+            page,
+            runId,
+            nodeId,
+            threadId,
+            jarvis,
+        });
 
         const chunkNumber = chunksSeen.length;
         await scrollToChunk(page, chunkNumber);
@@ -2922,6 +3090,13 @@ async function textExtractHelper({
         const chunkNumber = chunksSeen.length;
 
         const page = await context.pages()[tab.index];
+        await ensureDomChangeScreenshotHooks({
+            page,
+            runId,
+            nodeId,
+            threadId,
+            jarvis,
+        });
         await scrollToChunk(page, chunkNumber);
 
         // take a screenshot
@@ -3250,6 +3425,49 @@ async function screenshotHelper({
     scaleDown,
 }) {
     try {
+        const attemptScreenshot = async () => {
+            await waitForSettledDom(page);
+
+            // Set viewport size
+            await page.setViewportSize({
+                width: Number(process.env.BROWSER_WIDTH),
+                height: Number(process.env.BROWSER_HEIGHT),
+            });
+
+            // Take screenshot
+            let screenshot = await page.screenshot({
+                type: "jpeg",
+                quality: 90,
+                timeout: 90000,
+            });
+
+            if (scaleDown) {
+                screenshot = await resizeImage({
+                    image: screenshot,
+                    width: scaleDown.width,
+                    height: scaleDown.height,
+                });
+            }
+
+            // Upload to S3
+            const uploadResult = await uploadFileToS3({
+                name: `${Date.now()}.jpeg`,
+                file: screenshot,
+                folder: `runs/${runId}/screenshots/${nodeId}`,
+                contentType: "image/jpeg",
+            });
+
+            if (!uploadResult) {
+                throw new Error("Failed to upload screenshot");
+            }
+
+            return {
+                imageUrl: uploadResult.publicUrl,
+                privateImageUrl: uploadResult.privateUrl,
+                success: true,
+            };
+        };
+
         const isRunActive = await jarvis.isRunActive({
             runId,
             flowId: jarvis.flow_id,
@@ -3263,46 +3481,27 @@ async function screenshotHelper({
             };
         }
 
-        await waitForSettledDom(page);
-
-        // Set viewport size
-        await page.setViewportSize({
-            width: Number(process.env.BROWSER_WIDTH),
-            height: Number(process.env.BROWSER_HEIGHT),
-        });
-
-        // Take screenshot
-        let screenshot = await page.screenshot({
-            type: "jpeg",
-            quality: 90,
-            timeout: 90000,
-        });
-
-        if (scaleDown) {
-            screenshot = await resizeImage({
-                image: screenshot,
-                width: scaleDown.width,
-                height: scaleDown.height,
-            });
+        try {
+            return await attemptScreenshot();
+        } catch (err) {
+            const msg = String(err?.message || "");
+            if (
+                msg.includes("Execution context was destroyed") ||
+                msg.includes("most likely because of a navigation") ||
+                msg.includes("Target closed")
+            ) {
+                // One retry after navigation settles
+                try {
+                    await page.waitForLoadState("domcontentloaded", {
+                        timeout: 10000,
+                    });
+                } catch (e) {
+                    // ignore
+                }
+                return await attemptScreenshot();
+            }
+            throw err;
         }
-
-        // Upload to S3
-        const uploadResult = await uploadFileToS3({
-            name: `${Date.now()}.jpeg`,
-            file: screenshot,
-            folder: `runs/${runId}/screenshots/${nodeId}`,
-            contentType: "image/jpeg",
-        });
-
-        if (!uploadResult) {
-            throw new Error("Failed to upload screenshot");
-        }
-
-        return {
-            imageUrl: uploadResult.publicUrl,
-            privateImageUrl: uploadResult.privateUrl,
-            success: true,
-        };
     } catch (err) {
         await jarvis.updateNodeDebugLog({
             runId,
@@ -3366,6 +3565,13 @@ async function simpleActionHelper({
         };
     }
     const page = await context.pages()[tab.index];
+    await ensureDomChangeScreenshotHooks({
+        page,
+        runId,
+        nodeId,
+        threadId,
+        jarvis,
+    });
 
     async function runPlanner({
         screenshot,
@@ -4260,6 +4466,13 @@ async function actHelperWithVision({
 
             if (tab) {
                 const page = await context.pages()[tab.index];
+                await ensureDomChangeScreenshotHooks({
+                    page,
+                    runId,
+                    nodeId,
+                    threadId,
+                    jarvis,
+                });
                 await clickOnPage({
                     page,
                     runId,
@@ -4269,6 +4482,13 @@ async function actHelperWithVision({
                 });
                 // wait for dom to settle
                 await waitForSettledDom(page);
+                await requestActionScreenshot({
+                    page,
+                    runId,
+                    nodeId,
+                    threadId,
+                    jarvis,
+                });
                 textResult = `Tried clicking on x: ${x}, y: ${y}. Confirm if required with a screenshot.`;
             }
         }
@@ -4283,6 +4503,13 @@ async function actHelperWithVision({
 
             if (tab) {
                 const page = await context.pages()[tab.index];
+                await ensureDomChangeScreenshotHooks({
+                    page,
+                    runId,
+                    nodeId,
+                    threadId,
+                    jarvis,
+                });
                 await typeOnPage({
                     page,
                     runId,
@@ -4293,6 +4520,13 @@ async function actHelperWithVision({
                 });
                 // wait for dom to settle
                 await waitForSettledDom(page);
+                await requestActionScreenshot({
+                    page,
+                    runId,
+                    nodeId,
+                    threadId,
+                    jarvis,
+                });
                 textResult = `Tried typing text: ${text}. Confirm if required with a screenshot.`;
             }
         }
@@ -4307,6 +4541,13 @@ async function actHelperWithVision({
 
             if (tab) {
                 const page = await context.pages()[tab.index];
+                await ensureDomChangeScreenshotHooks({
+                    page,
+                    runId,
+                    nodeId,
+                    threadId,
+                    jarvis,
+                });
                 await keyOnPage({
                     page,
                     runId,
@@ -4317,6 +4558,13 @@ async function actHelperWithVision({
                 });
                 // wait for dom to settle
                 await waitForSettledDom(page);
+                await requestActionScreenshot({
+                    page,
+                    runId,
+                    nodeId,
+                    threadId,
+                    jarvis,
+                });
                 textResult = `Tried pressing key: ${key}. Confirm if required with a screenshot.`;
             }
         }
@@ -4331,6 +4579,13 @@ async function actHelperWithVision({
 
             if (tab) {
                 const page = await context.pages()[tab.index];
+                await ensureDomChangeScreenshotHooks({
+                    page,
+                    runId,
+                    nodeId,
+                    threadId,
+                    jarvis,
+                });
                 await scrollOnPage({
                     page,
                     runId,
@@ -4342,6 +4597,13 @@ async function actHelperWithVision({
                 });
                 // wait for dom to settle
                 await waitForSettledDom(page);
+                await requestActionScreenshot({
+                    page,
+                    runId,
+                    nodeId,
+                    threadId,
+                    jarvis,
+                });
                 textResult = `Tried scrolling at x: ${x}, y: ${y} with deltaX: ${deltaX}, deltaY: ${deltaY}. Confirm if required with a screenshot.`;
             }
         }
@@ -4356,6 +4618,13 @@ async function actHelperWithVision({
 
             if (tab) {
                 const page = await context.pages()[tab.index];
+                await ensureDomChangeScreenshotHooks({
+                    page,
+                    runId,
+                    nodeId,
+                    threadId,
+                    jarvis,
+                });
                 await clickOnPage({
                     page,
                     runId,
@@ -4366,6 +4635,13 @@ async function actHelperWithVision({
                 });
                 // wait for dom to settle
                 await waitForSettledDom(page);
+                await requestActionScreenshot({
+                    page,
+                    runId,
+                    nodeId,
+                    threadId,
+                    jarvis,
+                });
                 textResult = `Tried double clicking on x: ${x}, y: ${y}. Confirm if required with a screenshot.`;
             }
         }
@@ -4380,6 +4656,13 @@ async function actHelperWithVision({
 
             if (tab) {
                 const page = await context.pages()[tab.index];
+                await ensureDomChangeScreenshotHooks({
+                    page,
+                    runId,
+                    nodeId,
+                    threadId,
+                    jarvis,
+                });
 
                 const { success, imageUrl, privateImageUrl } =
                     await screenshotHelper({
@@ -6053,6 +6336,13 @@ ONLY OUTPUT THE JSON. NO OTHER TEXT.`,
 
             if (tab) {
                 const page = await context.pages()[tab.index];
+                await ensureDomChangeScreenshotHooks({
+                    page,
+                    runId,
+                    nodeId,
+                    threadId,
+                    jarvis,
+                });
 
                 await scrollToChunk(page, 0);
 
@@ -6553,6 +6843,13 @@ ${extractedContent}`,
             });
         } else {
             const page = await context.pages()[tab.index];
+            await ensureDomChangeScreenshotHooks({
+                page,
+                runId,
+                nodeId,
+                threadId,
+                jarvis,
+            });
 
             /* Add the screenshot of the tab to the agent log */
             const { success, imageUrl, privateImageUrl } =
@@ -6911,6 +7208,13 @@ ${extractedContent}`,
                 });
             } else {
                 const page = await context.pages()[tab.index];
+                await ensureDomChangeScreenshotHooks({
+                    page,
+                    runId,
+                    nodeId,
+                    threadId,
+                    jarvis,
+                });
 
                 await scrollToChunk(page, chunkNumber);
 
