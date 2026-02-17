@@ -7009,6 +7009,18 @@ ${extractedContent}`,
                     },
                 ],
             });
+
+            if (success) {
+                await jarvis.saveNodePrivateData({
+                    runId,
+                    nodeId,
+                    data: Object.assign(nodeInfo.private_data || {}, {
+                        browser_task_completed: true,
+                        browser_task_completed_at: new Date().toISOString(),
+                        browser_task_note: message || "Browser task completed.",
+                    }),
+                });
+            }
         } catch (error) {
             console.error(error);
             await jarvis.updateNodeAgentLog({

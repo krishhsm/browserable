@@ -7,6 +7,7 @@ var logger = require("morgan");
 const { createBullBoard } = require("@bull-board/api");
 const { BullAdapter } = require("@bull-board/api/bullAdapter");
 const { ExpressAdapter } = require("@bull-board/express");
+const fs = require("fs");
 
 var indexRouter = require("./routes/index");
 var otpRouter = require("./routes/otp");
@@ -40,6 +41,57 @@ var {
 } = require("./logic/user");
 var { createAccountForUser, getAccountsOfUser } = require("./logic/account");
 var db = require("./services/db");
+
+const LOG_TO_FILE =
+    String(process.env.LOG_TO_FILE || "").toLowerCase() === "1" ||
+    String(process.env.LOG_TO_FILE || "").toLowerCase() === "true";
+const LOG_FILE_PATH =
+    process.env.LOG_FILE_PATH || path.join(process.cwd(), "logs", "node-logs.jsonl");
+
+function appendConsoleLog(level, args) {
+    if (!LOG_TO_FILE) return;
+    try {
+        const dir = path.dirname(LOG_FILE_PATH);
+        fs.mkdirSync(dir, { recursive: true });
+        const message = args
+            .map((arg) => {
+                if (typeof arg === "string") return arg;
+                try {
+                    return JSON.stringify(arg);
+                } catch (e) {
+                    return String(arg);
+                }
+            })
+            .join(" ");
+        const line = JSON.stringify({
+            ts: new Date().toISOString(),
+            segment: "console",
+            level,
+            pid: process.pid,
+            message,
+        });
+        fs.promises.appendFile(LOG_FILE_PATH, line + "\n").catch(() => {});
+    } catch (e) {
+        // never throw from logger
+    }
+}
+
+const originalConsoleLog = console.log.bind(console);
+const originalConsoleWarn = console.warn.bind(console);
+const originalConsoleError = console.error.bind(console);
+
+console.log = (...args) => {
+    originalConsoleLog(...args);
+    appendConsoleLog("log", args);
+};
+console.warn = (...args) => {
+    originalConsoleWarn(...args);
+    appendConsoleLog("warn", args);
+};
+console.error = (...args) => {
+    originalConsoleError(...args);
+    appendConsoleLog("error", args);
+};
 
 async function setupBaseUser() {
     const user_id = await createUser({

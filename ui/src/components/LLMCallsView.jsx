@@ -122,6 +122,11 @@ function LLMCallsView({ flowId }) {
     return `${diff.toFixed(2)}s`;
   };
 
+  const calculateTimeDiffSeconds = (created, completed) => {
+    if (!completed) return 0;
+    return (new Date(completed) - new Date(created)) / 1000;
+  };
+
   const formatUsecase = (usecase) => {
     if (!usecase) return "-";
     // Convert snake_case or camelCase to Title Case
@@ -145,6 +150,27 @@ function LLMCallsView({ flowId }) {
       }, 0)
       .toFixed(4);
   };
+
+  const totals = llmCalls.data.reduce(
+    (acc, call) => {
+      const inputTokens = call.token_meta?.prompt_tokens || 0;
+      const outputTokens = call.token_meta?.completion_tokens || 0;
+      const cost = parseFloat(
+        calculateCost(call.model, inputTokens, outputTokens)
+      );
+      const duration = calculateTimeDiffSeconds(
+        call.created_at,
+        call.completed_at
+      );
+      return {
+        inputTokens: acc.inputTokens + inputTokens,
+        outputTokens: acc.outputTokens + outputTokens,
+        cost: acc.cost + (Number.isNaN(cost) ? 0 : cost),
+        duration: acc.duration + duration,
+      };
+    },
+    { inputTokens: 0, outputTokens: 0, cost: 0, duration: 0 }
+  );
 
   useEffect(() => {
     dispatch(getLLMCalls({ flowId, pageSize, pageNumber: 1, accountId }));
@@ -317,6 +343,41 @@ function LLMCallsView({ flowId }) {
               </tr>
             ))}
           </tbody>
+          <tfoot className="bg-gray-50 text-xs text-black font-semibold">
+            <tr>
+              <td className="px-6 py-1.5 whitespace-nowrap min-w-[50px]">
+                Total
+              </td>
+              <td className="px-6 py-1.5 whitespace-nowrap min-w-[100px]">
+                {totals.duration ? `${totals.duration.toFixed(2)}s` : "-"}
+              </td>
+              <td className="px-6 py-1.5 whitespace-nowrap min-w-[100px]">
+                -
+              </td>
+              <td className="px-6 py-1.5 whitespace-nowrap min-w-[100px]">
+                {totals.inputTokens}
+              </td>
+              <td className="px-6 py-1.5 whitespace-nowrap min-w-[100px]">
+                {totals.outputTokens}
+              </td>
+              <td className="px-6 py-1.5 whitespace-nowrap min-w-[100px]">
+                {totals.cost.toFixed(4)}
+              </td>
+              <td className="px-6 py-1.5 whitespace-nowrap min-w-[100px]">
+                -
+              </td>
+              <td className="px-6 py-1.5 min-w-[100px]">-</td>
+              <td className="px-6 py-1.5 min-w-[100px]">-</td>
+              <td className="px-6 py-1.5 min-w-[100px]">-</td>
+              <td className="px-6 py-1.5 min-w-[100px]">-</td>
+              <td className="px-6 py-1.5 whitespace-nowrap min-w-[100px]">
+                -
+              </td>
+              <td className="px-6 py-1.5 whitespace-nowrap min-w-[100px]">
+                -
+              </td>
+            </tr>
+          </tfoot>
         </table>
       </div>
 

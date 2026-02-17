@@ -2822,20 +2822,51 @@ async function decideAgent({ runId, preferredNodeId }) {
         if (agentOfNode === "DECISION_NODE") {
             let parentOfCurrentNodeId = node.private_data?.parentNodeId;
             let parentNodeStructuredOutput = null;
+            let parentNodePrivateData = null;
+            let parentNodeAgentCode = null;
             if (parentOfCurrentNodeId) {
                 const { rows: parentNodes } = await tasksDB.query(
-                    `SELECT private_data FROM browserable.nodes WHERE id = $1`,
+                    `SELECT private_data, agent_code FROM browserable.nodes WHERE id = $1`,
                     [parentOfCurrentNodeId]
                 );
                 if (parentNodes.length > 0) {
                     parentNodeStructuredOutput =
                         parentNodes[0].private_data?.structuredOutput;
+                    parentNodePrivateData = parentNodes[0].private_data || {};
+                    parentNodeAgentCode = parentNodes[0].agent_code || null;
                 }
             }
 
             const isDocumentShortlisted =
                 dataOfThread.shortlistedDocumentIds &&
                 dataOfThread.shortlistedDocumentIds.length > 0;
+            const taskInput = thread.input || "";
+            const hasCloseCondition =
+                /close condition/i.test(taskInput) ||
+                /do this only once/i.test(taskInput);
+            const browserTaskCompleted =
+                parentNodeAgentCode === "BROWSER_AGENT" &&
+                parentNodePrivateData?.browser_task_completed === true;
+
+            if (hasCloseCondition && browserTaskCompleted) {
+                await updateNodeStatus({
+                    runId,
+                    nodeId: node.id,
+                    status: "completed",
+                    input_wait: null,
+                    trigger_wait: null,
+                });
+
+                await endThread({
+                    runId,
+                    threadId,
+                    userId: user_id,
+                    accountId: run.account_id,
+                    error: null,
+                    status: "completed",
+                });
+                return;
+            }
 
             await updateNodeStatus({
                 runId,
