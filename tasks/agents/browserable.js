@@ -67,6 +67,7 @@ async function ensureDomChangeScreenshotHooks({
             pendingReason: null,
             config: null,
             schedule: null,
+            intervalId: null,
         };
         domScreenshotState.set(page, state);
     }
@@ -169,15 +170,7 @@ async function ensureDomChangeScreenshotHooks({
 
     state.schedule = scheduleScreenshot;
 
-    page.on("domcontentloaded", () => {
-        scheduleScreenshot("nav");
-    });
-    page.on("load", () => scheduleScreenshot("nav"));
-    page.on("framenavigated", (frame) => {
-        if (frame === page.mainFrame()) {
-            scheduleScreenshot("nav");
-        }
-    });
+    // No automatic screenshots here. We only capture on explicit actions.
 }
 
 async function requestActionScreenshot({
@@ -196,7 +189,7 @@ async function requestActionScreenshot({
     });
     const state = domScreenshotState.get(page);
     if (state?.schedule) {
-        state.schedule("action", true);
+        state.schedule("before_action", true);
     }
 }
 
@@ -3915,6 +3908,14 @@ previousGoalAnalysis usage:
             };
         }
 
+        await requestActionScreenshot({
+            page,
+            runId,
+            nodeId,
+            threadId,
+            jarvis,
+        });
+
         await _performPlaywrightMethod({
             method,
             args,
@@ -4473,6 +4474,13 @@ async function actHelperWithVision({
                     threadId,
                     jarvis,
                 });
+                await requestActionScreenshot({
+                    page,
+                    runId,
+                    nodeId,
+                    threadId,
+                    jarvis,
+                });
                 await clickOnPage({
                     page,
                     runId,
@@ -4482,13 +4490,6 @@ async function actHelperWithVision({
                 });
                 // wait for dom to settle
                 await waitForSettledDom(page);
-                await requestActionScreenshot({
-                    page,
-                    runId,
-                    nodeId,
-                    threadId,
-                    jarvis,
-                });
                 textResult = `Tried clicking on x: ${x}, y: ${y}. Confirm if required with a screenshot.`;
             }
         }
@@ -4510,6 +4511,13 @@ async function actHelperWithVision({
                     threadId,
                     jarvis,
                 });
+                await requestActionScreenshot({
+                    page,
+                    runId,
+                    nodeId,
+                    threadId,
+                    jarvis,
+                });
                 await typeOnPage({
                     page,
                     runId,
@@ -4520,13 +4528,6 @@ async function actHelperWithVision({
                 });
                 // wait for dom to settle
                 await waitForSettledDom(page);
-                await requestActionScreenshot({
-                    page,
-                    runId,
-                    nodeId,
-                    threadId,
-                    jarvis,
-                });
                 textResult = `Tried typing text: ${text}. Confirm if required with a screenshot.`;
             }
         }
@@ -4548,6 +4549,13 @@ async function actHelperWithVision({
                     threadId,
                     jarvis,
                 });
+                await requestActionScreenshot({
+                    page,
+                    runId,
+                    nodeId,
+                    threadId,
+                    jarvis,
+                });
                 await keyOnPage({
                     page,
                     runId,
@@ -4558,13 +4566,6 @@ async function actHelperWithVision({
                 });
                 // wait for dom to settle
                 await waitForSettledDom(page);
-                await requestActionScreenshot({
-                    page,
-                    runId,
-                    nodeId,
-                    threadId,
-                    jarvis,
-                });
                 textResult = `Tried pressing key: ${key}. Confirm if required with a screenshot.`;
             }
         }
@@ -4586,6 +4587,13 @@ async function actHelperWithVision({
                     threadId,
                     jarvis,
                 });
+                await requestActionScreenshot({
+                    page,
+                    runId,
+                    nodeId,
+                    threadId,
+                    jarvis,
+                });
                 await scrollOnPage({
                     page,
                     runId,
@@ -4597,13 +4605,6 @@ async function actHelperWithVision({
                 });
                 // wait for dom to settle
                 await waitForSettledDom(page);
-                await requestActionScreenshot({
-                    page,
-                    runId,
-                    nodeId,
-                    threadId,
-                    jarvis,
-                });
                 textResult = `Tried scrolling at x: ${x}, y: ${y} with deltaX: ${deltaX}, deltaY: ${deltaY}. Confirm if required with a screenshot.`;
             }
         }
@@ -4625,6 +4626,13 @@ async function actHelperWithVision({
                     threadId,
                     jarvis,
                 });
+                await requestActionScreenshot({
+                    page,
+                    runId,
+                    nodeId,
+                    threadId,
+                    jarvis,
+                });
                 await clickOnPage({
                     page,
                     runId,
@@ -4635,13 +4643,6 @@ async function actHelperWithVision({
                 });
                 // wait for dom to settle
                 await waitForSettledDom(page);
-                await requestActionScreenshot({
-                    page,
-                    runId,
-                    nodeId,
-                    threadId,
-                    jarvis,
-                });
                 textResult = `Tried double clicking on x: ${x}, y: ${y}. Confirm if required with a screenshot.`;
             }
         }
