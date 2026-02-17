@@ -97,9 +97,9 @@ async function downloadImage(url, index, total) {
 async function createGif(imageBuffers) {
     const width = Number(process.env.BROWSER_WIDTH) || 800;
     const height = Number(process.env.BROWSER_HEIGHT) || 600;
-    // scale down 0.8
-    const scaledWidth = width * 0.8;
-    const scaledHeight = height * 0.8;
+    // scale down 0.5
+    const scaledWidth = Math.round(width * 0.5);
+    const scaledHeight = Math.round(height * 0.5);
     const encoder = new GIFEncoder(scaledWidth, scaledHeight); // Set dimensions as needed
     const canvas = new Canvas(scaledWidth, scaledHeight);
     const ctx = canvas.getContext('2d');
@@ -107,7 +107,7 @@ async function createGif(imageBuffers) {
     encoder.start();
     encoder.setRepeat(0);   // 0 for repeat, -1 for no-repeat
     encoder.setDelay(1000); // Frame delay in ms
-    encoder.setQuality(10); // Image quality (1-30)
+    encoder.setQuality(25); // Image quality (1-30), higher is faster/lower quality
     
     const totalFrames = imageBuffers.length;
     const startTime = Date.now();
