@@ -72,7 +72,7 @@ services:
       OPENAI_API_KEY:
       CLAUDE_API_KEY: 
       QWEN_API_KEY: 
-      GEMINI_API_KEY: AIzaSyDNGavIfQ6xlPIHqnj9FxiEQIu690gGCrs
+      GEMINI_API_KEY:
       DEEPSEEK_API_KEY: 
       STEEL_API_KEY: 
       HYPER_BROWSER_API_KEY:
