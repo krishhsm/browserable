@@ -101,6 +101,7 @@ async getTaskRunStatus(taskId: string, runId?: string): Promise<ApiResponse<Task
 interface TaskRunStatus {
   status: 'scheduled' | 'running' | 'completed' | 'error';
   detailedStatus?: string;
+  latestMessage?: string;
   toolCall?: any;
   liveStatus?: any;
 }

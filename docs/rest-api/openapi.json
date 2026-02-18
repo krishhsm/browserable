@@ -79,7 +79,9 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["task"],
+                "required": [
+                  "task"
+                ],
                 "properties": {
                   "task": {
                     "type": "string",
@@ -215,7 +217,10 @@
                           },
                           "status": {
                             "type": "string",
-                            "enum": ["active", "inactive"],
+                            "enum": [
+                              "active",
+                              "inactive"
+                            ],
                             "description": "Current status of the task",
                             "example": "active"
                           },
@@ -379,7 +384,12 @@
                       "properties": {
                         "status": {
                           "type": "string",
-                          "enum": ["scheduled", "running", "completed", "error"],
+                          "enum": [
+                            "scheduled",
+                            "running",
+                            "completed",
+                            "error"
+                          ],
                           "description": "High-level status of the task run",
                           "example": "running"
                         },
@@ -398,6 +408,11 @@
                           "type": "object",
                           "description": "Real-time status information about the current operation",
                           "example": "<live url>"
+                        },
+                        "latestMessage": {
+                          "type": "string",
+                          "description": "Latest agent message for the current run state",
+                          "example": "Click on Settings"
                         }
                       }
                     }
@@ -453,7 +468,12 @@
                       "properties": {
                         "status": {
                           "type": "string",
-                          "enum": ["scheduled", "running", "completed", "error"],
+                          "enum": [
+                            "scheduled",
+                            "running",
+                            "completed",
+                            "error"
+                          ],
                           "description": "Status of the run",
                           "example": "completed"
                         },
@@ -676,7 +696,9 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["input"],
+                "required": [
+                  "input"
+                ],
                 "properties": {
                   "input": {
                     "type": "string",

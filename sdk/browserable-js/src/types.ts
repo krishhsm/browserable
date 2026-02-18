@@ -27,6 +27,7 @@ export interface TaskRun {
 export interface TaskRunStatus {
   status: 'scheduled' | 'running' | 'completed' | 'error';
   detailedStatus?: string;
+  latestMessage?: string;
   toolCall?: any;
   liveStatus?: any;
 }

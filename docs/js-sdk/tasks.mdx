@@ -64,6 +64,7 @@ const status = await browserable.getTaskRunStatus(taskId, runId);
 if (status.success && status.data) {
   console.log('Run status:', status.data.status);
   console.log('Detailed status:', status.data.detailedStatus);
+  console.log('Latest message:', status.data.latestMessage);
   
   if (status.data.toolCall) {
     console.log('Waiting for input:', status.data.toolCall);
