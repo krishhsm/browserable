@@ -1,30 +1,33 @@
 var Queue = require("bull");
 
-const redisConfig = process.env.NODE_ENV === 'production' 
-  ? { tls: true, enableTLSForSentinelMode: false }
-  : {};
+const redisUrl = `${process.env.TASKS_REDIS_URL}2`;
+const useTls =
+    redisUrl.startsWith("rediss://") ||
+    String(process.env.REDIS_TLS || "").toLowerCase() === "true" ||
+    String(process.env.REDIS_TLS || "") === "1";
+const redisConfig = useTls ? { tls: true, enableTLSForSentinelMode: false } : {};
 
-var baseQueue = new Queue("base-queue", `${process.env.TASKS_REDIS_URL}2`, {
+var baseQueue = new Queue("base-queue", redisUrl, {
     redis: redisConfig,
 });
-var agentQueue = new Queue("agent-queue", `${process.env.TASKS_REDIS_URL}2`, {
+var agentQueue = new Queue("agent-queue", redisUrl, {
     redis: redisConfig,
 });
 var integrationsQueue = new Queue(
     "integrations-queue",
-    `${process.env.TASKS_REDIS_URL}2`,
+    redisUrl,
     { redis: redisConfig }
 );
-var flowQueue = new Queue("flow-queue", `${process.env.TASKS_REDIS_URL}2`, {
+var flowQueue = new Queue("flow-queue", redisUrl, {
     redis: redisConfig,
 });
-var vectorQueue = new Queue("vector-queue", `${process.env.TASKS_REDIS_URL}2`, {
+var vectorQueue = new Queue("vector-queue", redisUrl, {
     redis: redisConfig,
 });
 
 const browserQueue = new Queue(
     "browser-queue",
-    `${process.env.TASKS_REDIS_URL}2`,
+    redisUrl,
     {
         redis: redisConfig,
     }

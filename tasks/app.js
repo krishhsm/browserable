@@ -30,6 +30,8 @@ var {
 // Import queue processors
 require("./logic/integrations/base");
 require("./logic/integrations/browser");
+require("./logic/flow");
+require("./agents/jarvis");
 
 const browserService = require("./services/browser");
 
