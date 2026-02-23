@@ -46,3 +46,5 @@ browser/.DS_Store
 
 # Ignore local development docker compose temp file
 deployment/docker-compose.dev.temp.yml
+deployment/docker-compose.dev.yml
+deployment/.env.prod

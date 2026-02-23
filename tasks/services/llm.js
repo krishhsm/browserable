@@ -100,10 +100,10 @@ async function callOpenAICompatibleLLMWithRetry({
         }
     }
 
-    if (!!process.env.OPENAI_API_KEY) {
-        serverSpecificModelKeys["gpt-4o"] = process.env.OPENAI_API_KEY;
-        serverSpecificModelKeys["gpt-4o-mini"] = process.env.OPENAI_API_KEY;
-    }
+    // if (!!process.env.OPENAI_API_KEY) {
+    //     serverSpecificModelKeys["gpt-4o"] = process.env.OPENAI_API_KEY;
+    //     serverSpecificModelKeys["gpt-4o-mini"] = process.env.OPENAI_API_KEY;
+    // }
 
     if (!!process.env.DEEPSEEK_API_KEY) {
         serverSpecificModelKeys["deepseek-chat"] = process.env.DEEPSEEK_API_KEY;
