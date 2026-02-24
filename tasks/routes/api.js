@@ -161,18 +161,10 @@ router.get(
                             status: null,
                             toolCall: null,
                             liveStatus: null,
+                            sessionId: null,
                         },
                     });
                 }
-            } else {
-                return res.json({
-                    success: true,
-                    data: {
-                        status: null,
-                        toolCall: null,
-                        liveStatus: null,
-                    },
-                });
             }
 
             const runStatus = await getRunStatus({

@@ -1289,6 +1289,7 @@ async function getRunStatus({
             status: null,
             toolCall: null,
             liveStatus: null,
+            sessionId: null,
         }
     }
 
@@ -1296,6 +1297,22 @@ async function getRunStatus({
     let toolCall = runs[0].input_wait;
     let liveStatus = runs[0].live_status;
     let runStatusCopy = runStatus;
+    let sessionId = null;
+
+    const { rows: sessionRows } = await tasksDB.query(
+        `SELECT session_id
+            FROM browserable.browser_session_requests
+            WHERE account_id = $1
+                AND metadata->>'runId' = $2
+                AND session_id IS NOT NULL
+            ORDER BY created_at DESC
+            LIMIT 1`,
+        [accountId, runId]
+    );
+
+    if (sessionRows.length > 0) {
+        sessionId = sessionRows[0].session_id;
+    }
 
     if (runStatus === "running" && runs[0].working_on_node_id) {
         const { rows: nodes } = await tasksDB.query(
@@ -1341,6 +1358,7 @@ async function getRunStatus({
         detailedStatus: runStatus,
         toolCall,
         liveStatus,
+        sessionId,
     };
 }
 
